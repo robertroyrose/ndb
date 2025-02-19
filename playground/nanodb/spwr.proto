@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.sunpower.edp.proto";
+// Output separate files for top level enums & messages (Makes code easier to manage)
+option java_multiple_files = true;
+
+import "google/protobuf/descriptor.proto";
+import "ndb.proto";
+import "nanopb.proto";
+
+enum etest {
+   option (xval_is_string) = true;
+   null = 0;
+   a = 1 [(val_is_string) = true];
+   b = 2 [(val_is_string) = false];
+}
+
+message MyOptions {
+  string file_only_option = 1;
+// [targets = TARGET_TYPE_FILE];
+  int32 message_and_enum_option = 2;
+// [targets = TARGET_TYPE_MESSAGE,
+//targets = TARGET_TYPE_ENUM];
+}
+
+extend google.protobuf.FileOptions {
+  MyOptions file_options = 50000;
+}
+
+extend google.protobuf.MessageOptions {
+  MyOptions message_options = 50000;
+}
+
+extend google.protobuf.EnumOptions {
+  MyOptions enum_options = 50000;
+}
+
+// OK: this field is allowed on file options
+option (file_options).file_only_option = "abc";
+
+message MyMessage {
+  // OK: this field is allowed on both message and enum options
+  option (message_options).message_and_enum_option = 42;
+}
+
+enum MyEnum {
+  MY_ENUM_UNSPECIFIED = 0;
+  // Error: file_only_option cannot be set on an enum.
+  option (enum_options).file_only_option = "xyz";
+}
+
+message SystemConfig {
+	string lmac = 1 [(fld_is_optional) = false];
+	string wmac = 2 [(fld_is_optional) = true];
+	string serialNum = 3 [ (nanodb).max_count = 64, (nanodb).max_size = 32];
+	string cc = 4;
+	string key = 5;
+	string ssid = 6;
+	string br = 7;
+}
+
+message UserConfig {
+}
+
+message AppsConfig {
+}
+
+message CertConfig {
+        string deviceCert = 1;
+        string awsIotEndpoint = 2;
+        string awsIotTopicCommand = 3;
+        string awsIotTopicCommandUpdate = 4;
+        string awsIotTopicData = 5;
+        string awsIotTopicEvent = 6;
+        string awsIotTopicTechnical = 7;
+        string awsIotTopicTime = 8;
+}
+
+message Config {
+	SystemConfig system = 1;
+	UserConfig user = 2;
+	AppsConfig apps = 3;
+	CertConfig cert = 4;
+}
+
+message State {
+}
+
+message Status {
+}
+
+message Root {
+	Config config = 1;
+	State state = 2;
+	Status status = 3;
+}
+
+message Root2 {
+	oneof aparm {
+		Config config = 1;
+		State state = 2;
+		Status status = 3;
+	}
+	string foo = 4;
+	oneof bparm {
+		Config xconfig = 5;
+		State xstate = 6;
+		Status xstatus = 7;
+	}
+	repeated SystemConfig bar = 8;
+}
+
+service m7 {
+	rpc f1(State) returns (Status);
+	rpc f2(Config) returns (Status);
+}
